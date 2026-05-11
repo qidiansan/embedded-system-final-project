@@ -1,10 +1,12 @@
 #include "PeerClient.h"
+#include <QNetworkProxy>
 
 PeerClient::PeerClient(QObject* parent)
     : QObject(parent)
     , m_socket(new QTcpSocket(this))
     , m_port(DEFAULT_PORT)
 {
+    m_socket->setProxy(QNetworkProxy::NoProxy);
     connect(m_socket, &QTcpSocket::connected, this, &PeerClient::onConnected);
     connect(m_socket, &QTcpSocket::errorOccurred, this, &PeerClient::onErrorOccurred);
 }
