@@ -49,7 +49,7 @@ private:
     QString             m_localRoot;
     int                 m_currentIndex = 0;
     qint64              m_totalBytes = 0;
-    qint64              m_sentBytes = 0;
+    qint64              m_completedBytes = 0;
     int                 m_completedCount = 0;
     bool                m_cancelled = false;
 };

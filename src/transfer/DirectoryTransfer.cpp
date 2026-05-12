@@ -43,7 +43,7 @@ void DirectoryTransfer::sendDirectory(PeerConnection* conn, const QString& local
     m_cancelled = false;
     m_currentIndex = 0;
     m_completedCount = 0;
-    m_sentBytes = 0;
+    m_completedBytes = 0;
 
     QFileInfo fi(localDirPath);
     if (!fi.isDir()) {
@@ -80,10 +80,9 @@ void DirectoryTransfer::sendDirectory(PeerConnection* conn, const QString& local
     m_fileSender = new FileSender(this);
     connect(m_fileSender, &FileSender::fileComplete, this, &DirectoryTransfer::onFileComplete);
     connect(m_fileSender, &FileSender::error, this, &DirectoryTransfer::onFileError);
-    connect(m_fileSender, &FileSender::progress, [this](const QString&, qint64 sent, qint64 total) {
+    connect(m_fileSender, &FileSender::progress, [this, dirName](const QString&, qint64 sent, qint64 total) {
         Q_UNUSED(total)
-        m_sentBytes += sent;
-        emit progress(m_entries.at(m_currentIndex).relativePath, m_sentBytes, m_totalBytes);
+        emit progress(dirName + "/", m_completedBytes + sent, m_totalBytes);
     });
 
     // Start sending the first file
@@ -111,6 +110,7 @@ void DirectoryTransfer::sendNextFile() {
 
 void DirectoryTransfer::onFileComplete(const QString& /*fileName*/) {
     m_completedCount++;
+    m_completedBytes += m_entries[m_currentIndex].fileSize;
     m_currentIndex++;
     sendNextFile();
 }
