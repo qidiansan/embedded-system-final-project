@@ -51,6 +51,8 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onTransferComplete);
     connect(m_transferMgr, &TransferManager::transferError,
             this, &MainWindow::onTransferError);
+    connect(m_transferMgr, &TransferManager::directoryComplete,
+            this, &MainWindow::onDirectoryComplete);
 
     // Set default save root to a subfolder next to the executable
     QString defaultSave = QDir::currentPath() + "/received_files";
@@ -179,13 +181,27 @@ void MainWindow::onPeerDisconnected() {
 }
 
 // --- helpers ---
-int MainWindow::findOrCreateRow(const QString& displayName, bool isSend, qint64 size) {
-    for (auto it = m_transferRows.begin(); it != m_transferRows.end(); ++it) {
-        if (it.key() == displayName)
-            return it.value();
+bool MainWindow::isSendFile(const QString& displayName) const {
+    if (m_sendNames.contains(displayName))
+        return true;
+    // Files inside a directory being sent: "dirName/file.txt" is Send if "dirName/" is in sendNames
+    int slash = displayName.lastIndexOf('/');
+    if (slash > 0) {
+        QString parentDir = displayName.left(slash + 1);  // "dirName/"
+        if (m_sendNames.contains(parentDir))
+            return true;
     }
+    return false;
+}
+
+int MainWindow::findOrCreateRow(const QString& displayName, bool isSend, qint64 size) {
+    auto it = m_transferRows.find(displayName);
+    if (it != m_transferRows.end())
+        return it.value();
     int row = m_transferPanel->addTransfer(displayName, isSend, size);
     m_transferRows[displayName] = row;
+    if (isSend)
+        m_sendNames.insert(displayName);
     return row;
 }
 
@@ -204,11 +220,12 @@ void MainWindow::onSendDir(const QString& path) {
 
 // --- Progress ---
 void MainWindow::onTransferProgress(const QString& fileName, qint64 transferred, qint64 total) {
-    // Auto-create row for received files (no explicit addTransfer call)
     auto it = m_transferRows.find(fileName);
     if (it == m_transferRows.end()) {
-        int row = m_transferPanel->addTransfer(fileName, false, total);
+        bool send = isSendFile(fileName);  // detect direction from parent entries
+        int row = m_transferPanel->addTransfer(fileName, send, total);
         it = m_transferRows.insert(fileName, row);
+        if (send) m_sendNames.insert(fileName);
     }
     if (total > 0) {
         int pct = static_cast<int>(transferred * 100 / total);
@@ -223,8 +240,10 @@ void MainWindow::onTransferComplete(const QString& fileName) {
     m_logPanel->appendLog("Transfer complete: " + fileName);
     auto it = m_transferRows.find(fileName);
     if (it == m_transferRows.end()) {
-        int row = m_transferPanel->addTransfer(fileName, false, 0);
+        bool send = isSendFile(fileName);
+        int row = m_transferPanel->addTransfer(fileName, send, 0);
         it = m_transferRows.insert(fileName, row);
+        if (send) m_sendNames.insert(fileName);
     }
     m_transferPanel->setProgressBar(it.value(), 100);
     m_transferPanel->setStatus(it.value(), "Complete");
@@ -235,8 +254,19 @@ void MainWindow::onTransferError(const QString& fileName, const QString& error) 
     m_logPanel->appendLog(QString("ERROR: %1 — %2").arg(fileName, error));
     auto it = m_transferRows.find(fileName);
     if (it == m_transferRows.end()) {
-        int row = m_transferPanel->addTransfer(fileName, false, 0);
+        bool send = isSendFile(fileName);
+        int row = m_transferPanel->addTransfer(fileName, send, 0);
         it = m_transferRows.insert(fileName, row);
+        if (send) m_sendNames.insert(fileName);
     }
     m_transferPanel->setStatus(it.value(), "Error: " + error);
+}
+
+// --- Directory Complete ---
+void MainWindow::onDirectoryComplete(const QString& dirName) {
+    auto it = m_transferRows.find(dirName);
+    if (it != m_transferRows.end()) {
+        m_transferPanel->setProgressBar(it.value(), 100);
+        m_transferPanel->setStatus(it.value(), "Complete");
+    }
 }

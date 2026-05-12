@@ -113,6 +113,7 @@ void TransferManager::startFileSend(const QString& filePath, const QString& remo
 
 void TransferManager::startDirSend(const QString& dirPath, const QString& remoteRoot) {
     Q_UNUSED(remoteRoot)
+    m_currentDirName = QFileInfo(dirPath).fileName() + "/";
     if (!m_dirTransfer) {
         m_dirTransfer = new DirectoryTransfer(this);
         connect(m_dirTransfer, &DirectoryTransfer::allComplete,
@@ -182,6 +183,8 @@ void TransferManager::onFileSentError(const QString& fileName, const QString& er
 
 void TransferManager::onDirAllComplete() {
     emit logMessage("Directory transfer complete.");
+    emit directoryComplete(m_currentDirName);
+    m_currentDirName.clear();
     m_sending = false;
     if (m_dirTransfer) {
         m_dirTransfer->deleteLater();

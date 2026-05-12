@@ -38,6 +38,7 @@ signals:
     void transferProgress(const QString& fileName, qint64 transferred, qint64 total);
     void transferComplete(const QString& fileName);
     void transferError(const QString& fileName, const QString& error);
+    void directoryComplete(const QString& dirName);
     void queueUpdated(int pending, int total);
     void logMessage(const QString& msg);
 
@@ -62,6 +63,7 @@ private:
     DirectoryTransfer*  m_dirTransfer = nullptr;
     QQueue<TransferJob> m_queue;
     QString             m_saveRoot;
+    QString             m_currentDirName;
     bool                m_sending = false;
     int                 m_totalJobs = 0;
     int                 m_pendingJobs = 0;

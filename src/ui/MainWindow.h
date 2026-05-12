@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMap>
+#include <QSet>
 #include <QTcpSocket>
 
 class ConnectionPanel;
@@ -32,10 +34,12 @@ private slots:
     void onTransferProgress(const QString& fileName, qint64 transferred, qint64 total);
     void onTransferComplete(const QString& fileName);
     void onTransferError(const QString& fileName, const QString& error);
+    void onDirectoryComplete(const QString& dirName);
 
 private:
     void setupUi();
     void setupPeerConnection(QTcpSocket* socket);
+    bool isSendFile(const QString& displayName) const;
     int  findOrCreateRow(const QString& displayName, bool isSend, qint64 size);
 
     ConnectionPanel*  m_connPanel;
@@ -49,6 +53,7 @@ private:
 
     // Track transfer table rows
     QMap<QString, int> m_transferRows;
+    QSet<QString>      m_sendNames;
 };
 
 #endif // MAINWINDOW_H
