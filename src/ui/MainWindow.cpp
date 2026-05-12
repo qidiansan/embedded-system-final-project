@@ -226,6 +226,8 @@ void MainWindow::onTransferProgress(const QString& fileName, qint64 transferred,
         int row = m_transferPanel->addTransfer(fileName, send, total);
         it = m_transferRows.insert(fileName, row);
         if (send) m_sendNames.insert(fileName);
+    } else if (total > 0) {
+        m_transferPanel->updateSize(it.value(), total);
     }
     if (total > 0) {
         int pct = static_cast<int>(transferred * 100 / total);

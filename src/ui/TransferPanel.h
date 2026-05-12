@@ -17,6 +17,7 @@ public:
     void updateProgress(int row, int percent, const QString& speed = QString());
     void setProgressBar(int row, int percent);
     void setStatus(int row, const QString& status);
+    void updateSize(int row, qint64 size);
     void removeRow(int row);
     void clearCompleted();
 

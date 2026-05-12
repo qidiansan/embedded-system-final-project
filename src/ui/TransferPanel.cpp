@@ -101,6 +101,11 @@ void TransferPanel::setStatus(int row, const QString& status) {
     m_model->item(row, 4)->setText(status);
 }
 
+void TransferPanel::updateSize(int row, qint64 size) {
+    if (row < 0 || row >= m_model->rowCount()) return;
+    m_model->item(row, 2)->setText(formatSize(size));
+}
+
 void TransferPanel::removeRow(int row) {
     if (row < 0 || row >= m_model->rowCount()) return;
     m_model->removeRow(row);
