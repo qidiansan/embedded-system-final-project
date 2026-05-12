@@ -15,6 +15,7 @@ public:
 
     int addTransfer(const QString& fileName, bool isSend, qint64 size);
     void updateProgress(int row, int percent, const QString& speed = QString());
+    void setProgressBar(int row, int percent);
     void setStatus(int row, const QString& status);
     void removeRow(int row);
     void clearCompleted();

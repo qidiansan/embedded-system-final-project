@@ -36,6 +36,7 @@ private slots:
 private:
     void setupUi();
     void setupPeerConnection(QTcpSocket* socket);
+    int  findOrCreateRow(const QString& displayName, bool isSend, qint64 size);
 
     ConnectionPanel*  m_connPanel;
     TransferPanel*    m_transferPanel;

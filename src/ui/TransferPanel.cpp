@@ -89,6 +89,13 @@ void TransferPanel::updateProgress(int row, int percent, const QString& speed) {
     m_model->item(row, 4)->setText(status);
 }
 
+void TransferPanel::setProgressBar(int row, int percent) {
+    if (row < 0 || row >= m_model->rowCount()) return;
+    auto* w = m_table->indexWidget(m_model->index(row, 3));
+    auto* bar = qobject_cast<QProgressBar*>(w);
+    if (bar) bar->setValue(percent);
+}
+
 void TransferPanel::setStatus(int row, const QString& status) {
     if (row < 0 || row >= m_model->rowCount()) return;
     m_model->item(row, 4)->setText(status);

@@ -178,31 +178,41 @@ void MainWindow::onPeerDisconnected() {
     statusBar()->showMessage("Peer disconnected");
 }
 
+// --- helpers ---
+int MainWindow::findOrCreateRow(const QString& displayName, bool isSend, qint64 size) {
+    for (auto it = m_transferRows.begin(); it != m_transferRows.end(); ++it) {
+        if (it.key() == displayName)
+            return it.value();
+    }
+    int row = m_transferPanel->addTransfer(displayName, isSend, size);
+    m_transferRows[displayName] = row;
+    return row;
+}
+
 // --- Send ---
 void MainWindow::onSendFile(const QString& path) {
     QFileInfo fi(path);
-    int row = m_transferPanel->addTransfer(fi.fileName(), true, fi.size());
-    m_transferRows[path] = row;
+    findOrCreateRow(fi.fileName(), true, fi.size());
     m_transferMgr->enqueueSend(path);
 }
 
 void MainWindow::onSendDir(const QString& path) {
     QFileInfo fi(path);
-    int row = m_transferPanel->addTransfer(fi.fileName() + "/", true, 0);
-    m_transferRows[path] = row;
+    findOrCreateRow(fi.fileName() + "/", true, 0);
     m_transferMgr->enqueueSend(path);
 }
 
 // --- Progress ---
 void MainWindow::onTransferProgress(const QString& fileName, qint64 transferred, qint64 total) {
-    Q_UNUSED(fileName)
-    // Update the current active row
-    for (auto it = m_transferRows.begin(); it != m_transferRows.end(); ++it) {
-        int row = it.value();
-        if (total > 0) {
-            int pct = static_cast<int>(transferred * 100 / total);
-            m_transferPanel->updateProgress(row, pct);
-        }
+    // Auto-create row for received files (no explicit addTransfer call)
+    auto it = m_transferRows.find(fileName);
+    if (it == m_transferRows.end()) {
+        int row = m_transferPanel->addTransfer(fileName, false, total);
+        it = m_transferRows.insert(fileName, row);
+    }
+    if (total > 0) {
+        int pct = static_cast<int>(transferred * 100 / total);
+        m_transferPanel->updateProgress(it.value(), pct);
     }
     statusBar()->showMessage(
         QString("Transferring... %1 / %2 bytes")
@@ -211,23 +221,22 @@ void MainWindow::onTransferProgress(const QString& fileName, qint64 transferred,
 
 void MainWindow::onTransferComplete(const QString& fileName) {
     m_logPanel->appendLog("Transfer complete: " + fileName);
-    // Find and update the row
-    for (auto it = m_transferRows.begin(); it != m_transferRows.end(); ++it) {
-        if (it.key().endsWith(fileName) || fileName.endsWith(QFileInfo(it.key()).fileName())) {
-            m_transferPanel->updateProgress(it.value(), 100);
-            m_transferPanel->setStatus(it.value(), "Complete");
-            break;
-        }
+    auto it = m_transferRows.find(fileName);
+    if (it == m_transferRows.end()) {
+        int row = m_transferPanel->addTransfer(fileName, false, 0);
+        it = m_transferRows.insert(fileName, row);
     }
+    m_transferPanel->setProgressBar(it.value(), 100);
+    m_transferPanel->setStatus(it.value(), "Complete");
     statusBar()->showMessage("Transfer complete: " + fileName, 5000);
 }
 
 void MainWindow::onTransferError(const QString& fileName, const QString& error) {
     m_logPanel->appendLog(QString("ERROR: %1 — %2").arg(fileName, error));
-    for (auto it = m_transferRows.begin(); it != m_transferRows.end(); ++it) {
-        if (it.key().endsWith(fileName) || fileName.endsWith(QFileInfo(it.key()).fileName())) {
-            m_transferPanel->setStatus(it.value(), "Error: " + error);
-            break;
-        }
+    auto it = m_transferRows.find(fileName);
+    if (it == m_transferRows.end()) {
+        int row = m_transferPanel->addTransfer(fileName, false, 0);
+        it = m_transferRows.insert(fileName, row);
     }
+    m_transferPanel->setStatus(it.value(), "Error: " + error);
 }
