@@ -42,11 +42,6 @@ void FileReceiver::onFileInfo(const FileInfo& info) {
         return;
     }
 
-    // Pre-allocate for large files (optional optimization)
-    if (info.fileSize > 0) {
-        m_file.resize(info.fileSize);
-    }
-
     emit logMessage(QString("Receiving: %1 (%2 bytes, %3 chunks)")
         .arg(info.relativePath).arg(info.fileSize).arg(info.totalChunks));
 }
